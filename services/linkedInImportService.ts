@@ -378,15 +378,18 @@ export async function extractTextFromPDF(pdfFile: File): Promise<string> {
 
   // Convert to string (basic extraction)
   // Note: This is a simple implementation. For production, use a proper PDF parser on the backend
-  let text = '';
+  const result = new Uint8Array(uint8Array.length);
+  let length = 0;
+
   for (let i = 0; i < uint8Array.length; i++) {
-    const char = String.fromCharCode(uint8Array[i]);
-    if (char.match(/[\x20-\x7E\n\r\t]/)) {
-      text += char;
+    const byte = uint8Array[i];
+    // Filter for basic printable ASCII and common whitespace (\n, \r, \t)
+    if ((byte >= 0x20 && byte <= 0x7E) || byte === 10 || byte === 13 || byte === 9) {
+      result[length++] = byte;
     }
   }
 
-  return text;
+  return new TextDecoder().decode(result.subarray(0, length));
 }
 
 /**
