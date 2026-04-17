@@ -87,5 +87,11 @@
     "import_error": "Veri içe aktarılamadı",
     "unknown_error": "Bilinmeyen hata",
     "api_key_missing": "API Anahtarı ayarlanmamış. Lütfen yüklemeden önce Yapay Zeka Ayarları sayfasından anahtarınızı ayarlayın."
+  },
+  "errors": {
+    "api_key_env_missing": "Gemini API anahtarı ayarlanmamış. Lütfen ortam değişkenlerini kontrol edin.",
+    "api_key_ui_missing": "API anahtarı bulunamadı. Lütfen 'Yapay Zeka Ayarları' sayfasından ekleyin.",
+    "job_description_required": "Lütfen analiz için bir iş ilanı yapıştırın.",
+    "invalid_request_type": "Geçersiz istek türü."
   }
 }

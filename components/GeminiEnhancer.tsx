@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { generateWithGemini } from '../services/geminiService';
 import { MagicIcon } from './IconComponents';
 import { AppContext } from '../context/AppContext';
@@ -16,6 +17,7 @@ interface GeminiEnhancerProps {
 }
 
 const GeminiEnhancer: React.FC<GeminiEnhancerProps> = ({ promptType, context, currentText, onGeneratedText }) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const { apiKey, setError } = useContext(AppContext);
 
@@ -78,7 +80,7 @@ Sadece kısa liste maddelerini döndür.`;
   const handleClick = async () => {
     if (!apiKey) {
 // Kullanıcıyı doğru sayfaya yönlendiren hata mesajı
-setError("API anahtarı bulunamadı. Lütfen 'Yapay Zeka Ayarları' sayfasından ekleyin.");
+setError(t('errors.api_key_ui_missing'));
 // Hata mesajını birkaç saniye sonra temizle
 setTimeout(() => setError(null), 3500);
 return;
@@ -88,7 +90,7 @@ return;
     setError(null);
     const prompt = generatePrompt();
     if (!prompt) {
-      setError('Geçersiz istek türü.');
+      setError(t('errors.invalid_request_type'));
       setIsLoading(false);
       return;
     }
