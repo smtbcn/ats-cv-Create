@@ -87,5 +87,11 @@
     "import_error": "Failed to import data",
     "unknown_error": "Unknown error",
     "api_key_missing": "API Key is not set. Please set it in the AI Settings page before uploading."
+  },
+  "errors": {
+    "api_key_env_missing": "Gemini API key is not set. Please check the environment variables.",
+    "api_key_ui_missing": "API key not found. Please add it from the 'AI Settings' page.",
+    "job_description_required": "Please paste a job description for analysis.",
+    "invalid_request_type": "Invalid request type."
   }
 }

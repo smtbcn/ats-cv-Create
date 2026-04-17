@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { analyzeCvWithGemini } from '../services/geminiService';
 import { type CvData, type AtsAnalysisResult } from '../types';
 import { MagicIcon } from './IconComponents';
@@ -11,6 +12,7 @@ interface AtsAnalysisModalProps {
 }
 
 const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cvData }) => {
+  const { t } = useTranslation();
   const [jobDescription, setJobDescription] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AtsAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,12 +22,12 @@ const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cv
   const handleAnalyze = async () => {
     if (!apiKey) {
       // Fix: Updated error message to not prompt for API key input from the UI.
-      setError('Gemini API anahtarı ayarlanmamış. Lütfen ortam değişkenlerini kontrol edin.');
+      setError(t('errors.api_key_env_missing'));
       return;
     }
 
     if (!jobDescription.trim()) {
-      setError('Lütfen analiz için bir iş ilanı yapıştırın.');
+      setError(t('errors.job_description_required'));
       return;
     }
     setIsLoading(true);
