@@ -114,8 +114,6 @@ async function parseLinkedInHandler(req: Request, res: Response) {
 
   const parsedData = await parseLinkedInHtmlWithGemini(apiKey, cleanedText, modelName);
 
-  const preview = JSON.stringify(parsedData, null, 2);
-  console.log('[server] Successfully parsed data with Gemini. Preview of response:', preview.slice(0, 1000));
     return res.status(200).json(parsedData);
 
   } catch (error) {
@@ -188,8 +186,6 @@ app.post('/api/parse-linkedin-pdf', async (req: Request, res: Response) => {
     console.log('[server] Calling Gemini service with extracted text...');
     const parsedData = await parseLinkedInHtmlWithGemini(apiKey, extractedText, modelName);
 
-    const preview = JSON.stringify(parsedData, null, 2);
-    console.log('[server] Successfully parsed data with Gemini. Preview:', preview.slice(0, 1000));
     return res.status(200).json(parsedData);
 
   } catch (error) {
