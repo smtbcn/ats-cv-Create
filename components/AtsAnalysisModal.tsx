@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { analyzeCvWithGemini } from '../services/geminiService';
+import { analyzeCvWithGemini, generateOptimizedCv } from '../services/geminiService';
 import { type CvData, type AtsAnalysisResult } from '../types';
 import { MagicIcon } from './IconComponents';
 import { AppContext } from '../context/AppContext';
@@ -11,13 +11,15 @@ interface AtsAnalysisModalProps {
   onClose: () => void;
   cvData: CvData;
   onAddSkill?: (skillName: string) => void;
+  onOptimizedCvGenerated?: (optimizedCv: CvData) => void;
 }
 
-const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cvData, onAddSkill }) => {
+const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cvData, onAddSkill, onOptimizedCvGenerated }) => {
   const { t } = useTranslation();
   const [jobDescription, setJobDescription] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AtsAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const { apiKey, error, setError } = useContext(AppContext);
 
@@ -47,11 +49,31 @@ const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cv
     }
   };
 
+  const handleGenerateOptimized = async () => {
+    if (!apiKey) return;
+    if (!analysisResult) return;
+
+    setIsGenerating(true);
+    try {
+      const optimizedCv = await generateOptimizedCv(apiKey, cvData, jobDescription, analysisResult);
+      onOptimizedCvGenerated?.(optimizedCv);
+      toast.success('Analize göre optimize edilmiş CV hazır!');
+      handleClose();
+    } catch (err) {
+      const errorMessage = (err as Error).message;
+      setError(errorMessage);
+      console.error(err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset state on close
     setAnalysisResult(null);
     setError(null);
     setIsLoading(false);
+    setIsGenerating(false);
     onClose();
   }
 
@@ -149,12 +171,29 @@ const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cv
         
         <footer className="p-4 border-t dark:border-gray-700 flex flex-col sm:flex-row justify-end items-center space-y-2 sm:space-y-0 sm:space-x-4 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
           {analysisResult ? (
-             <button
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleGenerateOptimized}
+                disabled={isGenerating}
+                className="flex items-center justify-center space-x-2 bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {isGenerating ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <MagicIcon />
+                )}
+                <span>{isGenerating ? 'Oluşturuluyor...' : 'Bu Analize Göre CV Üret'}</span>
+              </button>
+              <button
                 onClick={() => { setAnalysisResult(null); setError(null); }}
                 className="w-full sm:w-auto bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 font-semibold px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
             >
                 Yeni Analiz Yap
             </button>
+            </div>
           ) : (
             <button
               onClick={handleAnalyze}

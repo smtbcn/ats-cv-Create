@@ -382,6 +382,108 @@ ${htmlContent}
     }
 };
 
+export const generateOptimizedCv = async (
+    apiKey: string,
+    cvData: CvData,
+    jobDescription: string,
+    analysisResult: AtsAnalysisResult,
+    attempt = 0
+): Promise<CvData> => {
+    if (!apiKey) {
+        throw new Error("API Key not found.");
+    }
+
+    const prompt = `
+You are a career expert and CV optimization specialist. Your task is to generate an optimized version of the user's CV that is tailored for a specific job description.
+
+HERE IS THE ORIGINAL CV DATA:
+\`\`\`json
+${JSON.stringify(cvData, null, 2)}
+\`\`\`
+
+HERE IS THE JOB DESCRIPTION:
+"""
+${jobDescription}
+"""
+
+HERE IS THE ATS ANALYSIS:
+- Match Score: ${analysisResult.matchScore}%
+- Summary: ${analysisResult.summary}
+- Matching Keywords: ${analysisResult.matchingKeywords.join(', ')}
+- Missing Keywords: ${analysisResult.missingKeywords.join(', ')}
+- Actionable Feedback:
+${analysisResult.actionableFeedback.map((f, i) => `  ${i + 1}. ${f}`).join('\n')}
+
+INSTRUCTIONS:
+1. Keep ALL personal information (name, email, phone, linkedin, github, address) EXACTLY as provided.
+2. Keep all experience entries — do NOT add fake jobs. Rephrase descriptions to emphasize skills relevant to this job.
+3. Keep all education entries exactly as they are.
+4. Keep all project entries — rephrase descriptions if helpful.
+5. Rewrite the "summary" field to target this specific role using relevant keywords.
+6. Add missing keywords from the analysis into the skills array (generate reasonable IDs).
+7. Naturally incorporate missing keywords into experience/project descriptions where appropriate.
+8. DO NOT fabricate degrees, certifications, or job titles.
+9. The output must be realistic, honest, and ATS-friendly.
+10. ALL text fields (summary, experience descriptions, project descriptions) MUST be in Turkish.
+
+Return ONLY a valid JSON object matching the CV structure. No other text.
+`;
+
+    try {
+        const ai = getGeminiInstance(apiKey);
+        const response: any = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+            }
+        });
+
+        const rawText = typeof response.text === 'function' ? response.text() : response.text;
+        const jsonString = rawText?.trim();
+        if (!jsonString) {
+            throw new Error("Gemini returned an empty response.");
+        }
+        const result = JSON.parse(jsonString);
+
+        // Preserve original IDs for safety
+        const idMap = new Map<string, string>();
+        cvData.experience.forEach(e => idMap.set(e.jobTitle + e.company, e.id));
+        cvData.education.forEach(e => idMap.set(e.school + e.degree, e.id));
+        cvData.projects.forEach(p => idMap.set(p.title + p.role, p.id));
+
+        return {
+            personalInfo: { ...cvData.personalInfo, ...result.personalInfo },
+            summary: result.summary ?? cvData.summary,
+            experience: (result.experience ?? []).map((e: any) => ({
+                ...e,
+                id: idMap.get(e.jobTitle + e.company) || e.id || `exp-${Date.now()}-${Math.random()}`
+            })),
+            education: (result.education ?? []).map((e: any) => ({
+                ...e,
+                id: idMap.get(e.school + e.degree) || e.id || `edu-${Date.now()}-${Math.random()}`
+            })),
+            skills: (result.skills ?? []).map((s: any, i: number) => ({
+                id: s.id || `skill-${Date.now()}-${i}`,
+                name: s.name
+            })),
+            projects: (result.projects ?? []).map((p: any) => ({
+                ...p,
+                id: idMap.get(p.title + p.role) || p.id || `prj-${Date.now()}-${Math.random()}`
+            })),
+        } as CvData;
+    } catch (error) {
+        if (isQuotaError(error) && attempt < 2) {
+            const retrySeconds = extractRetryDelaySeconds(error) ?? 12;
+            const waitMs = Math.max(5, Math.ceil(retrySeconds)) * 1000;
+            console.warn(`[Gemini] Quota hit while optimizing CV. Retrying in ${waitMs}ms (attempt ${attempt + 1}).`);
+            await delay(waitMs);
+            return generateOptimizedCv(apiKey, cvData, jobDescription, analysisResult, attempt + 1);
+        }
+        throw new Error(handleApiError(error));
+    }
+};
+
 const analysisSchema = {
     type: Type.OBJECT,
     properties: {

@@ -24,7 +24,8 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const [optimizedCv, setOptimizedCv] = useState<CvData | null>(null);
+  const displayCv = optimizedCv ?? cvData;
 
   const handlePrint = () => {
     window.print();
@@ -48,9 +49,10 @@ const App: React.FC = () => {
     input.click();
   };
 
-  const handleExportPdf = async () => {
-    // Validate CV data before export
-    const validation = validateCvForExport(cvData);
+  const handleExportPdf = async (sourceCv?: CvData) => {
+    const targetCv = sourceCv ?? displayCv;
+
+    const validation = validateCvForExport(targetCv);
 
     if (!validation.isValid) {
       toast.error('Cannot export CV', {
@@ -59,8 +61,7 @@ const App: React.FC = () => {
       return;
     }
 
-    // Validate personal info fields
-    const personalInfoErrors = validatePersonalInfo(cvData.personalInfo);
+    const personalInfoErrors = validatePersonalInfo(targetCv.personalInfo);
     if (Object.keys(personalInfoErrors).length > 0) {
       const errorMessages = Object.entries(personalInfoErrors)
         .map(([field, error]) => `${field}: ${error}`)
@@ -74,15 +75,16 @@ const App: React.FC = () => {
 
     try {
       const { pdf } = await import('@react-pdf/renderer');
-      const blob = await pdf(<CvPdf cvData={cvData} t={t} />).toBlob();
+      const blob = await pdf(<CvPdf cvData={targetCv} t={t} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const fileName = `${cvData.personalInfo.name.replace(/\s+/g, '_')}_CV_${new Date().toISOString().split('T')[0]}.pdf`;
+      const suffix = optimizedCv ? '_Optimized' : '';
+      const fileName = `${targetCv.personalInfo.name.replace(/\s+/g, '_')}${suffix}_CV_${new Date().toISOString().split('T')[0]}.pdf`;
       link.download = fileName;
       link.click();
       URL.revokeObjectURL(url);
-      toast.success('PDF exported successfully!');
+      toast.success(optimizedCv ? 'Optimize edilmiş PDF indirildi!' : 'PDF exported successfully!');
     } catch (err) {
       toast.error('Error creating PDF', {
         description: (err as Error).message,
@@ -157,9 +159,9 @@ const App: React.FC = () => {
                   <AnalysisIcon />
                   <span className="sm:inline">Analyze</span>
                 </button>
-                <button onClick={handleExportPdf} className="flex items-center justify-center space-x-2 bg-indigo-600 text-white font-medium px-3 py-2 rounded-md text-sm hover:bg-indigo-700" title="Download as PDF">
+                <button onClick={() => handleExportPdf(optimizedCv ?? undefined)} className="flex items-center justify-center space-x-2 bg-indigo-600 text-white font-medium px-3 py-2 rounded-md text-sm hover:bg-indigo-700" title="Download as PDF">
                   <DownloadIcon />
-                  <span className="sm:inline">Download PDF</span>
+                  <span className="sm:inline">{optimizedCv ? 'Optimize PDF İndir' : 'Download PDF'}</span>
                 </button>
                 <button onClick={handlePrint} className="flex items-center justify-center space-x-1 bg-gray-600 text-white font-medium px-3 py-2 rounded-md text-sm hover:bg-gray-700" title="Print">
                   <PrintIcon />
@@ -211,7 +213,26 @@ const App: React.FC = () => {
             fixed lg:relative inset-y-0 right-0 transform ${isPreviewOpen ? 'translate-x-0' : 'translate-x-full'} lg:transform-none
             transition-transform duration-300 ease-in-out
           `}>
-            <CvPreview cvData={cvData} />
+            {optimizedCv && (
+              <div className="mb-3 flex items-center justify-between bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300 text-xs font-semibold px-3 py-2 rounded-md">
+                <span>🔍 Analiz CV'si görüntüleniyor</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleExportPdf(optimizedCv)}
+                    className="bg-green-600 text-white px-2.5 py-1 rounded text-xs hover:bg-green-700"
+                  >
+                    PDF İndir
+                  </button>
+                  <button
+                    onClick={() => setOptimizedCv(null)}
+                    className="text-green-700 dark:text-green-300 hover:underline"
+                  >
+                    Ana CV'ye Dön
+                  </button>
+                </div>
+              </div>
+            )}
+            <CvPreview cvData={displayCv} />
           </div>
         </div>
       </div>
@@ -227,6 +248,9 @@ const App: React.FC = () => {
             skills: [...prev.skills, newSkill],
           }));
           toast.success(`"${skillName}" skill'lere eklendi`);
+        }}
+        onOptimizedCvGenerated={(optimizedCv) => {
+          setOptimizedCv(optimizedCv);
         }}
       />
       <Toast />
