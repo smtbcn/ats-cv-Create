@@ -414,17 +414,21 @@ HERE IS THE ATS ANALYSIS:
 - Actionable Feedback:
 ${analysisResult.actionableFeedback.map((f, i) => `  ${i + 1}. ${f}`).join('\n')}
 
-INSTRUCTIONS:
-1. Keep ALL personal information (name, email, phone, linkedin, github, address) EXACTLY as provided.
-2. Keep all experience entries — do NOT add fake jobs. Rephrase descriptions to emphasize skills relevant to this job.
-3. Keep all education entries exactly as they are.
-4. Keep all project entries — rephrase descriptions if helpful.
-5. Rewrite the "summary" field to target this specific role using relevant keywords.
-6. Add missing keywords from the analysis into the skills array (generate reasonable IDs).
-7. Naturally incorporate missing keywords into experience/project descriptions where appropriate.
-8. DO NOT fabricate degrees, certifications, or job titles.
-9. The output must be realistic, honest, and ATS-friendly.
-10. ALL text fields (summary, experience descriptions, project descriptions) MUST be in Turkish.
+CRITICAL — MINIMAL CHANGE POLICY:
+You must preserve the ORIGINAL CV as much as possible. Make only tiny, targeted adjustments.
+
+RULES (strict):
+1. personalInfo — copy EXACTLY, no changes.
+2. experience — keep ALL entries. Do NOT rewrite descriptions. At most change 1-2 words per entry if a critical missing keyword fits naturally. 95%+ of the text must stay identical.
+3. education — copy EXACTLY, no changes.
+4. projects — copy EXACTLY, no changes.
+5. summary — at most tweak 1 sentence. Do NOT rewrite the whole summary.
+6. skills — add at most 2-3 of the MOST critical missing keywords. Do NOT add all missing keywords.
+7. DO NOT fabricate degrees, certifications, job titles, or experience.
+8. Do NOT restructure, reformat, or reimagine the CV. Keep it >95% identical to the original.
+9. ALL text fields (summary, experience descriptions) MUST be in Turkish.
+
+Think of it as: if the original CV and the new CV were side by side, someone should barely notice the difference — but an ATS scanner should score it higher.
 
 Return ONLY a valid JSON object matching the CV structure. No other text.
 `;
