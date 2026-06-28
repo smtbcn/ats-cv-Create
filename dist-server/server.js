@@ -92,15 +92,12 @@ async function parseLinkedInHandler(req, res) {
         }
         console.log('[server] Calling Gemini service with provided API key...');
         const parsedData = await parseLinkedInHtmlWithGemini(apiKey, cleanedText, modelName);
-        const preview = JSON.stringify(parsedData, null, 2);
-        console.log('[server] Successfully parsed data with Gemini. Preview of response:', preview.slice(0, 1000));
         return res.status(200).json(parsedData);
     }
     catch (error) {
         console.error('[server] An error occurred during the process:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return res.status(500).json({
-            error: `An error occurred during parsing: ${errorMessage}`,
+            error: 'An internal server error occurred during parsing. Please try again later.',
         });
     }
 }
@@ -150,15 +147,12 @@ app.post('/api/parse-linkedin-pdf', async (req, res) => {
         }
         console.log('[server] Calling Gemini service with extracted text...');
         const parsedData = await parseLinkedInHtmlWithGemini(apiKey, extractedText, modelName);
-        const preview = JSON.stringify(parsedData, null, 2);
-        console.log('[server] Successfully parsed data with Gemini. Preview:', preview.slice(0, 1000));
         return res.status(200).json(parsedData);
     }
     catch (error) {
         console.error('[server] An error occurred during PDF parsing:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return res.status(500).json({
-            error: `An error occurred during PDF parsing: ${errorMessage}`,
+            error: 'An internal server error occurred during PDF parsing. Please try again later.',
         });
     }
 });

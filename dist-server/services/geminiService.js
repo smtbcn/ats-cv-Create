@@ -281,6 +281,101 @@ ${htmlContent}
         throw new Error(handleApiError(error));
     }
 };
+export const generateOptimizedCv = async (apiKey, cvData, jobDescription, analysisResult, attempt = 0) => {
+    if (!apiKey) {
+        throw new Error("API Key not found.");
+    }
+    const prompt = `
+You are a career expert and CV optimization specialist. Your task is to generate an optimized version of the user's CV that is tailored for a specific job description.
+
+HERE IS THE ORIGINAL CV DATA:
+\`\`\`json
+${JSON.stringify(cvData, null, 2)}
+\`\`\`
+
+HERE IS THE JOB DESCRIPTION:
+"""
+${jobDescription}
+"""
+
+HERE IS THE ATS ANALYSIS:
+- Match Score: ${analysisResult.matchScore}%
+- Summary: ${analysisResult.summary}
+- Matching Keywords: ${analysisResult.matchingKeywords.join(', ')}
+- Missing Keywords: ${analysisResult.missingKeywords.join(', ')}
+- Actionable Feedback:
+${analysisResult.actionableFeedback.map((f, i) => `  ${i + 1}. ${f}`).join('\n')}
+
+CRITICAL — MINIMAL CHANGE POLICY:
+You must preserve the ORIGINAL CV as much as possible. Make only tiny, targeted adjustments.
+
+RULES (strict):
+1. personalInfo — copy EXACTLY, no changes.
+2. experience — keep ALL entries. Do NOT rewrite descriptions. At most change 1-2 words per entry if a critical missing keyword fits naturally. 95%+ of the text must stay identical.
+3. education — copy EXACTLY, no changes.
+4. projects — copy EXACTLY, no changes.
+5. summary — at most tweak 1 sentence. Do NOT rewrite the whole summary.
+6. skills — add at most 2-3 of the MOST critical missing keywords. Do NOT add all missing keywords.
+7. DO NOT fabricate degrees, certifications, job titles, or experience.
+8. Do NOT restructure, reformat, or reimagine the CV. Keep it >95% identical to the original.
+9. ALL text fields (summary, experience descriptions) MUST be in Turkish.
+
+Think of it as: if the original CV and the new CV were side by side, someone should barely notice the difference — but an ATS scanner should score it higher.
+
+Return ONLY a valid JSON object matching the CV structure. No other text.
+`;
+    try {
+        const ai = getGeminiInstance(apiKey);
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+            }
+        });
+        const rawText = typeof response.text === 'function' ? response.text() : response.text;
+        const jsonString = rawText?.trim();
+        if (!jsonString) {
+            throw new Error("Gemini returned an empty response.");
+        }
+        const result = JSON.parse(jsonString);
+        // Preserve original IDs for safety
+        const idMap = new Map();
+        cvData.experience.forEach(e => idMap.set(e.jobTitle + e.company, e.id));
+        cvData.education.forEach(e => idMap.set(e.school + e.degree, e.id));
+        cvData.projects.forEach(p => idMap.set(p.title + p.role, p.id));
+        return {
+            personalInfo: { ...cvData.personalInfo, ...result.personalInfo },
+            summary: result.summary ?? cvData.summary,
+            experience: (result.experience ?? []).map((e) => ({
+                ...e,
+                id: idMap.get(e.jobTitle + e.company) || e.id || `exp-${Date.now()}-${Math.random()}`
+            })),
+            education: (result.education ?? []).map((e) => ({
+                ...e,
+                id: idMap.get(e.school + e.degree) || e.id || `edu-${Date.now()}-${Math.random()}`
+            })),
+            skills: (result.skills ?? []).map((s, i) => ({
+                id: s.id || `skill-${Date.now()}-${i}`,
+                name: s.name
+            })),
+            projects: (result.projects ?? []).map((p) => ({
+                ...p,
+                id: idMap.get(p.title + p.role) || p.id || `prj-${Date.now()}-${Math.random()}`
+            })),
+        };
+    }
+    catch (error) {
+        if (isQuotaError(error) && attempt < 2) {
+            const retrySeconds = extractRetryDelaySeconds(error) ?? 12;
+            const waitMs = Math.max(5, Math.ceil(retrySeconds)) * 1000;
+            console.warn(`[Gemini] Quota hit while optimizing CV. Retrying in ${waitMs}ms (attempt ${attempt + 1}).`);
+            await delay(waitMs);
+            return generateOptimizedCv(apiKey, cvData, jobDescription, analysisResult, attempt + 1);
+        }
+        throw new Error(handleApiError(error));
+    }
+};
 const analysisSchema = {
     type: Type.OBJECT,
     properties: {
@@ -335,6 +430,7 @@ export const analyzeCvWithGemini = async (apiKey, cvData, jobDescription, attemp
         5.  **Actionable Feedback**: Provide concrete, actionable suggestions on how the candidate can improve their CV for this position.
 
         Your entire response must be only the JSON object. Do not add any other text.
+        IMPORTANT: You MUST write the "summary" and "actionableFeedback" fields entirely in Turkish.
     `;
     try {
         const ai = getGeminiInstance(apiKey);

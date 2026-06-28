@@ -240,13 +240,17 @@ const App: React.FC = () => {
       <AtsAnalysisModal
         isOpen={isAtsModalOpen}
         onClose={() => setIsAtsModalOpen(false)}
-        cvData={cvData}
+        cvData={displayCv}
         onAddSkill={(skillName) => {
           const newSkill = { id: `skill-${Date.now()}`, name: skillName };
-          cvDataHook.setCvData((prev: CvData) => ({
-            ...prev,
-            skills: [...prev.skills, newSkill],
-          }));
+          if (optimizedCv) {
+            setOptimizedCv({ ...optimizedCv, skills: [...optimizedCv.skills, newSkill] });
+          } else {
+            cvDataHook.setCvData((prev: CvData) => ({
+              ...prev,
+              skills: [...prev.skills, newSkill],
+            }));
+          }
           toast.success(`"${skillName}" skill'lere eklendi`);
         }}
         onOptimizedCvGenerated={(optimizedCv) => {
