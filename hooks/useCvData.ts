@@ -126,6 +126,18 @@ export const useCvData = () => {
     }));
   };
 
+  const moveEntry = (section: CvSection, id: string, direction: 'up' | 'down') => {
+    setCvData((prev) => {
+      const items = [...prev[section]];
+      const idx = items.findIndex((item) => (item as { id: string }).id === id);
+      if (idx === -1) return prev;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= items.length) return prev;
+      [items[idx], items[targetIdx]] = [items[targetIdx], items[idx]];
+      return { ...prev, [section]: items };
+    });
+  };
+
   const updateEntry = (section: CvSection, id: string, field: string, value: any) => {
     setCvData((prev) => ({
       ...prev,
@@ -187,5 +199,5 @@ export const useCvData = () => {
     });
   };
 
-  return { cvData, setCvData, updateField, addEntry, removeEntry, updateEntry, updateSummary, clearCvData, exportCvData, importCvData };
+  return { cvData, setCvData, updateField, addEntry, removeEntry, moveEntry, updateEntry, updateSummary, clearCvData, exportCvData, importCvData };
 };

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import CvPreview from './components/CvPreview';
 import { useCvData } from './hooks/useCvData';
+import type { CvData } from './types';
 import { BrandIcon, AnalysisIcon, PrintIcon, DownloadIcon } from './components/IconComponents';
 import AtsAnalysisModal from './components/AtsAnalysisModal';
 import Toast from './components/Toast';
@@ -97,6 +98,7 @@ const App: React.FC = () => {
           onUpdateField={cvDataHook.updateField}
           onAddEntry={cvDataHook.addEntry}
           onRemoveEntry={cvDataHook.removeEntry}
+          onMoveEntry={cvDataHook.moveEntry}
           onUpdateEntry={cvDataHook.updateEntry}
           onUpdateSummary={(cvDataHook as any).updateSummary}
           setCvData={cvDataHook.setCvData}
@@ -218,6 +220,14 @@ const App: React.FC = () => {
         isOpen={isAtsModalOpen}
         onClose={() => setIsAtsModalOpen(false)}
         cvData={cvData}
+        onAddSkill={(skillName) => {
+          const newSkill = { id: `skill-${Date.now()}`, name: skillName };
+          cvDataHook.setCvData((prev: CvData) => ({
+            ...prev,
+            skills: [...prev.skills, newSkill],
+          }));
+          toast.success(`"${skillName}" skill'lere eklendi`);
+        }}
       />
       <Toast />
     </>

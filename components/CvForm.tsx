@@ -1,6 +1,6 @@
 import React from 'react';
 import { type CvData, type CvSection } from '../types';
-import { AddIcon, DeleteIcon } from './IconComponents';
+import { AddIcon, DeleteIcon, MoveUpIcon, MoveDownIcon } from './IconComponents';
 import GeminiEnhancer from './GeminiEnhancer';
 
 interface CvFormProps {
@@ -8,6 +8,7 @@ interface CvFormProps {
   onUpdateField: (section: 'personalInfo', field: keyof CvData['personalInfo'], value: string) => void;
   onAddEntry: (section: CvSection) => void;
   onRemoveEntry: (section: CvSection, id: string) => void;
+  onMoveEntry: (section: CvSection, id: string, direction: 'up' | 'down') => void;
   onUpdateEntry: (section: CvSection, id: string, field: string, value: string) => void;
   onUpdateSummary: (summary: string) => void;
 }
@@ -40,7 +41,7 @@ const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { l
   </div>
 );
 
-const CvForm: React.FC<CvFormProps> = ({ cvData, onUpdateField, onAddEntry, onRemoveEntry, onUpdateEntry, onUpdateSummary }) => {
+const CvForm: React.FC<CvFormProps> = ({ cvData, onUpdateField, onAddEntry, onRemoveEntry, onMoveEntry, onUpdateEntry, onUpdateSummary }) => {
   const handleSummaryUpdate = (newSummary: string) => {
     onUpdateSummary(newSummary);
   };
@@ -81,17 +82,37 @@ const CvForm: React.FC<CvFormProps> = ({ cvData, onUpdateField, onAddEntry, onRe
       {/* Work Experience */}
       <Section title="Work Experience">
 
-        {cvData.experience.map((exp) => (
+        {cvData.experience.map((exp, idx) => (
           <div key={exp.id} className="p-4 border dark:border-gray-700 rounded-md mb-4 relative bg-gray-50 dark:bg-gray-800/50">
-            <button
-              onClick={() => onRemoveEntry('experience', exp.id)}
-              className="absolute top-2 right-2 text-gray-400 dark:text-gray-500 hover:text-red-500"
-              aria-label="Delete experience"
-              title="Delete experience"
-            >
-              <DeleteIcon />
-            </button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="absolute top-2 right-2 flex items-center space-x-1">
+              <button
+                onClick={() => onMoveEntry('experience', exp.id, 'up')}
+                disabled={idx === 0}
+                className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Move up"
+                title="Yukarı taşı"
+              >
+                <MoveUpIcon />
+              </button>
+              <button
+                onClick={() => onMoveEntry('experience', exp.id, 'down')}
+                disabled={idx === cvData.experience.length - 1}
+                className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Move down"
+                title="Aşağı taşı"
+              >
+                <MoveDownIcon />
+              </button>
+              <button
+                onClick={() => onRemoveEntry('experience', exp.id)}
+                className="text-gray-400 dark:text-gray-500 hover:text-red-500"
+                aria-label="Delete experience"
+                title="Delete experience"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8">
               <Input label="Position" value={exp.jobTitle} onChange={(e) => onUpdateEntry('experience', exp.id, 'jobTitle', e.target.value)} autoComplete="organization-title" />
               <Input label="Company" value={exp.company} onChange={(e) => onUpdateEntry('experience', exp.id, 'company', e.target.value)} autoComplete="organization" />
               <Input label="Start Date" value={exp.startDate} onChange={(e) => onUpdateEntry('experience', exp.id, 'startDate', e.target.value)} />
@@ -117,19 +138,38 @@ const CvForm: React.FC<CvFormProps> = ({ cvData, onUpdateField, onAddEntry, onRe
 
       {/* Projects */}
       <Section title="Projects">
-        {cvData.projects.map((prj) => (
+        {cvData.projects.map((prj, idx) => (
           <div key={prj.id} className="p-4 border dark:border-gray-700 rounded-md mb-4 relative bg-gray-50 dark:bg-gray-800/50">
-            <button
-              onClick={() => onRemoveEntry('projects', prj.id)}
-              className="absolute top-2 right-2 text-gray-400 dark:text-gray-500 hover:text-red-500"
-              aria-label="Delete project"
-              title="Delete project"
-            >
+            <div className="absolute top-2 right-2 flex items-center space-x-1">
+              <button
+                onClick={() => onMoveEntry('projects', prj.id, 'up')}
+                disabled={idx === 0}
+                className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Move up"
+                title="Yukarı taşı"
+              >
+                <MoveUpIcon />
+              </button>
+              <button
+                onClick={() => onMoveEntry('projects', prj.id, 'down')}
+                disabled={idx === cvData.projects.length - 1}
+                className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Move down"
+                title="Aşağı taşı"
+              >
+                <MoveDownIcon />
+              </button>
+              <button
+                onClick={() => onRemoveEntry('projects', prj.id)}
+                className="text-gray-400 dark:text-gray-500 hover:text-red-500"
+                aria-label="Delete project"
+                title="Delete project"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
 
-              <DeleteIcon />
-            </button>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
               <Input
                 label="Project Title"
                 placeholder="e.g., E-commerce Platform"
@@ -181,21 +221,41 @@ const CvForm: React.FC<CvFormProps> = ({ cvData, onUpdateField, onAddEntry, onRe
 
 {/* Education */}
 <Section title="Education">
-  {cvData.education.map((edu) => (
+  {cvData.education.map((edu, idx) => (
     <div
       key={edu.id}
       className="p-4 border dark:border-gray-700 rounded-md mb-4 relative bg-gray-50 dark:bg-gray-800/50"
     >
-      <button
-        onClick={() => onRemoveEntry('education', edu.id)}
-        className="absolute top-2 right-2 text-gray-400 dark:text-gray-500 hover:text-red-500"
-        aria-label="Delete education"
-        title="Delete education"
-      >
-        <DeleteIcon />
-      </button>
+      <div className="absolute top-2 right-2 flex items-center space-x-1">
+        <button
+          onClick={() => onMoveEntry('education', edu.id, 'up')}
+          disabled={idx === 0}
+          className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Move up"
+          title="Yukarı taşı"
+        >
+          <MoveUpIcon />
+        </button>
+        <button
+          onClick={() => onMoveEntry('education', edu.id, 'down')}
+          disabled={idx === cvData.education.length - 1}
+          className="text-gray-400 dark:text-gray-500 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Move down"
+          title="Aşağı taşı"
+        >
+          <MoveDownIcon />
+        </button>
+        <button
+          onClick={() => onRemoveEntry('education', edu.id)}
+          className="text-gray-400 dark:text-gray-500 hover:text-red-500"
+          aria-label="Delete education"
+          title="Delete education"
+        >
+          <DeleteIcon />
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8">
         <Input
           label="School"
           value={edu.school}

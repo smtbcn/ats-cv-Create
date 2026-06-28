@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { analyzeCvWithGemini } from '../services/geminiService';
 import { type CvData, type AtsAnalysisResult } from '../types';
 import { MagicIcon } from './IconComponents';
@@ -9,9 +10,10 @@ interface AtsAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
   cvData: CvData;
+  onAddSkill?: (skillName: string) => void;
 }
 
-const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cvData }) => {
+const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cvData, onAddSkill }) => {
   const { t } = useTranslation();
   const [jobDescription, setJobDescription] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AtsAnalysisResult | null>(null);
@@ -122,7 +124,21 @@ const AtsAnalysisModal: React.FC<AtsAnalysisModalProps> = ({ isOpen, onClose, cv
                   <h4 className="font-bold text-red-700 dark:text-red-400 mb-2">Eksik Anahtar Kelimeler</h4>
                   <div className="flex flex-wrap gap-2 p-3 bg-red-50 dark:bg-red-900/50 rounded-md border border-red-200 dark:border-red-800">
                     {analysisResult.missingKeywords.map((keyword) => (
-                      <span key={keyword} className="bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 text-xs font-medium px-2.5 py-0.5 rounded-full">{keyword}</span>
+                      <button
+                        key={keyword}
+                        onClick={() => {
+                          onAddSkill?.(keyword);
+                          setAnalysisResult(prev => prev ? {
+                            ...prev,
+                            missingKeywords: prev.missingKeywords.filter(k => k !== keyword),
+                            matchingKeywords: [...prev.matchingKeywords, keyword],
+                          } : prev);
+                        }}
+                        className="bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 text-xs font-medium px-2.5 py-0.5 rounded-full hover:bg-red-200 dark:hover:bg-red-500/40 hover:line-through cursor-pointer transition-all"
+                        title="Skill'lere ekle"
+                      >
+                        + {keyword}
+                      </button>
                     ))}
                   </div>
                 </div>

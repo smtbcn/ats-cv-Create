@@ -445,6 +445,7 @@ export const analyzeCvWithGemini = async (
         5.  **Actionable Feedback**: Provide concrete, actionable suggestions on how the candidate can improve their CV for this position.
 
         Your entire response must be only the JSON object. Do not add any other text.
+        IMPORTANT: You MUST write the "summary" and "actionableFeedback" fields entirely in Turkish.
     `;
 
     try {
